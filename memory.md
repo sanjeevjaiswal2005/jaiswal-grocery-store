@@ -9,3 +9,4 @@
 - 2026-11-13: Mobile menu now a right-side slide-in drawer (framer-motion) with overlay.
 - 2026-11-13: Shop category sidebar stays vertical/left on phone (72px, sticky) instead of horizontal chips; override at end of style.css.
 - 2026-11-13: Restructured for GitHub/Vercel + multi-dev work. Backend split into domain controllers/routes/models/middlewares (46 routes preserved, seed moved to src/scripts/seed.js). Frontend ui.jsx split into app/, features/*, shared/. Added frontend/vercel.json (SPA rewrite). Verified: vite build ok, ESLint no-undef 0 errors over 92 files, API endpoints respond. Pre-refactor backup: Desktop/jaiswal-backup. Note: backend is a long-running Express+socket.io server, so deploy it on Render/Railway (Vercel is fine for frontend only).
+- 2026-11-13: Pushed to https://github.com/sanjeevjaiswal2005/jaiswal-grocery-store (public, branch main). gh CLI has accounts sanjeevjaiswal2005 (active) and techinfinitydevelopers.
