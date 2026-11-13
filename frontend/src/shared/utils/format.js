@@ -1,0 +1,2 @@
+export const money=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n||0);
+export const photos=['https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1000&q=85','https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=85','https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=800&q=85'];

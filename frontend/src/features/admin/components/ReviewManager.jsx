@@ -1,0 +1,6 @@
+import React,{useEffect,useState} from 'react';
+import {api} from '../../../shared/services/api.js';
+import {setItems} from '../../../app/app.store.js';
+import {usePage} from '../../../shared/hooks/usePage.jsx';
+
+export function ReviewManager({notify}){const[items,setItems]=useState([]),[pageItems,pager]=usePage(items,8);const load=()=>api.get('/admin/reviews').then(r=>setItems(r.data.items)).catch(e=>notify(e.message));useEffect(()=>{load()},[]);const act=async(id,action)=>{try{await api.patch('/admin/reviews/'+id,{action});notify(action==='approve'?'Review published.':'Review removed.');load()}catch(e){notify(e.message)}};return <section className="admin-card"><div className="admin-card-head"><h2>{items.length} customer reviews</h2></div>{pageItems.map(r=><article className="admin-review" key={r._id}><div><b>{r.product?.name} · {r.user?.name}</b><small>{'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}</small><p>{r.comment}</p></div>{r.approved?<span className="status status-delivered">Published</span>:<div><button className="outline-btn" onClick={()=>act(r._id,'approve')}>Approve</button> <button className="outline-btn" onClick={()=>act(r._id,'reject')}>Reject</button></div>}</article>)}{pager}</section>}

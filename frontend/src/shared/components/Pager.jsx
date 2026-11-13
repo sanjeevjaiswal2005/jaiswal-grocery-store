@@ -1,0 +1,3 @@
+import React from 'react';
+
+export function Pager({page,pages,onPage}){if(pages<=1)return null;const nums=[...new Set([1,page-1,page,page+1,pages])].filter(n=>n>=1&&n<=pages).sort((a,b)=>a-b);return <nav className="pager" aria-label="Pagination"><button type="button" disabled={page<=1} onClick={()=>onPage(page-1)}>Prev</button>{nums.map((n,i)=><React.Fragment key={n}>{i>0&&n-nums[i-1]>1&&<span>…</span>}<button type="button" className={n===page?'active':''} aria-current={n===page?'page':undefined} onClick={()=>onPage(n)}>{n}</button></React.Fragment>)}<button type="button" disabled={page>=pages} onClick={()=>onPage(page+1)}>Next</button></nav>}
