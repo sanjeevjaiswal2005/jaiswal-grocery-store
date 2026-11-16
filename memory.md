@@ -12,3 +12,8 @@
 - 2026-11-13: Pushed to https://github.com/sanjeevjaiswal2005/jaiswal-grocery-store (public, branch main). gh CLI has accounts sanjeevjaiswal2005 (active) and techinfinitydevelopers.
 - 2026-11-13: Deployed on Vercel: web https://jaiswal-grocery-store.vercel.app (proxies /api/v1 to API), api https://jaiswal-grocery-api.vercel.app (backend/api/index.js serverless). No socket.io on Vercel. Atlas must allow 0.0.0.0/0. Backend env vars set in Vercel (MONGODB_URI, JWT_SECRET etc.).
 - 2026-11-13: Replaced broken Unsplash images for categories snacks-drinks and cold-drinks (DB + seed.js).
+- 2026-11-13: UI/UX pass: font floor 11px (was 7px), --muted contrast darkened, :focus-visible, 16px mobile inputs, mobile announcement fix; fixed 10 dead product image URLs in DB. Redeployed web to Vercel.
+- 2026-11-16: Typography bump in frontend/src/app/index.css: font px 11→13, 12→14, 13→15, 14→16, 15→16.5, 16→17, 17–19 +1, ≥20 ×1.06 (font-size and font shorthand). Build passes.
+- 2026-11-16: Landing page refresh: hero search bar (→/shop?q=) + popular category chips + star rating, taller hero, card-style benefits, larger section heads/category cards, responsive overrides appended to index.css ("Landing page refresh"); Home.jsx hero edited. Build passes; not visually verified in browser.
+- 2026-11-16: Landing below-fold: added How-it-works section, image headers on promise cards, dark gradient newsletter (Home.jsx + index.css 'Below-the-fold visuals'). Build passes.
+- 2026-11-16: Added GitHub Actions CI/CD (.github/workflows/ci-cd.yml): CI on PR/push, Vercel prod deploy of backend+frontend on main. Needs repo secret VERCEL_TOKEN. Not yet pushed/tested.

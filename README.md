@@ -53,3 +53,10 @@ frontend/src
 ```
 
 Contributing: add new code to the matching feature/domain folder; keep one component, controller or route file per concern.
+
+## CI/CD
+
+GitHub Actions (`.github/workflows/ci-cd.yml`):
+- Every PR and push: backend syntax check + frontend build.
+- Push to `main` (after CI passes): deploys backend (`jaiswal-grocery-api`) and frontend (`jaiswal-grocery-store`) to Vercel production.
+- Required repo secret: `VERCEL_TOKEN` (Vercel → Account Settings → Tokens). Add under GitHub → Settings → Secrets and variables → Actions.

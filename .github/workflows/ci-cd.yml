@@ -1,0 +1,66 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: team_XBJU1w5b0cCvtFJLjQdpLjrj
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Backend - install and syntax check
+        working-directory: backend
+        run: |
+          npm ci
+          find src api -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Frontend - install and build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  deploy:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - dir: backend
+            project_id: prj_aP3ifig6ebTEMxCwjSU2ayiN8l8K
+          - dir: frontend
+            project_id: prj_PZaUwUS13GG8hJLInA08u55ph5A0
+    env:
+      VERCEL_PROJECT_ID: ${{ matrix.project_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm i -g vercel@latest
+      - name: Pull Vercel settings
+        working-directory: ${{ matrix.dir }}
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build
+        working-directory: ${{ matrix.dir }}
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy
+        working-directory: ${{ matrix.dir }}
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
