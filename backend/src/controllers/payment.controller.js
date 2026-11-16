@@ -106,7 +106,7 @@ const hmac = (secret, text) => crypto.createHmac('sha256', secret).update(text).
 const safeEqual = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 
 export async function paymentConfig(req, res) {
-  return ok(res, { provider: razorpayEnabled() ? 'razorpay' : 'dummy', keyId: razorpayEnabled() ? rzpKeys().id : undefined, upiQr: await upiQrEnabled() });
+  return ok(res, { provider: razorpayEnabled() ? 'razorpay' : 'dummy', keyId: razorpayEnabled() ? rzpKeys().id : undefined, upiQr: await upiQrEnabled(), upiVpa: process.env.UPI_VPA || undefined, upiName: process.env.UPI_NAME || undefined });
 }
 
 export async function createRazorpayPayment(req, res) {

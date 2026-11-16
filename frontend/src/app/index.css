@@ -307,3 +307,7 @@ html{scroll-behavior:smooth}
 .pay-chip.pay-verifying{background:#eef6ff;color:#245080}
 .status-verifying{background:#eef6ff}
 .upi-modal .outline-btn{display:flex;justify-content:center;padding:11px}
+.upi-qr-wait{display:grid;place-items:center;height:260px;color:#234d3c}
+.upi-meta{display:grid;gap:2px;justify-items:center;font-size:14px;color:#46554a;text-align:center}
+.upi-app-btn{border:1px solid #d9e2d3;margin:0;font-size:15px}
+.upi-modal .upi-app-btn{display:flex;gap:8px}
