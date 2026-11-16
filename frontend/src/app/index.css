@@ -292,3 +292,5 @@ html{scroll-behavior:smooth}
 .pay-tabs button{min-width:0}
 .pay-submit{display:flex;justify-content:center;max-width:100%}
 .pay-wait{background:#fff;border-radius:14px;padding:28px 34px;color:#234d3c}
+.notif-actions{display:flex;gap:14px;align-items:center}
+.notif-head button.danger{color:#a15a48}
