@@ -11,6 +11,7 @@ import wishlistRoutes from './wishlist.route.js';
 import couponRoutes from './coupon.route.js';
 import orderRoutes from './order.route.js';
 import notificationRoutes from './notification.route.js';
+import paymentRoutes from './payment.route.js';
 import reportRoutes from './report.route.js';
 import inventoryRoutes from './inventory.route.js';
 
@@ -29,6 +30,7 @@ router.use(wishlistRoutes);
 router.use(couponRoutes);
 router.use(orderRoutes);
 router.use(notificationRoutes);
+router.use(paymentRoutes);
 router.use(reportRoutes);
 router.use(inventoryRoutes);
 
