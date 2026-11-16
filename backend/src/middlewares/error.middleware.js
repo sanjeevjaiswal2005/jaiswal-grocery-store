@@ -1,2 +1,21 @@
-export const errorHandler=(err,req,res,next)=>{ console.error(err); const status=err.status|| (err.name==='CastError'?404:500); res.status(status).json({success:false,message:status===500?'Something went wrong. Please try again.':err.message, ...(process.env.NODE_ENV==='development'&&err.name==='ValidationError'?{details:err.message}:{})}); };
-export const notFound=(req,res)=>res.status(404).json({success:false,message:'We could not find that endpoint.'});
+export const errorHandler = (err, req, res, next) => {
+  console.error(err);
+  const status = err.status || (err.name === "CastError" ? 404 : 500);
+  res
+    .status(status)
+    .json({
+      success: false,
+      message:
+        status === 500
+          ? "Something went wrong. Please try again."
+          : err.message,
+      ...(process.env.NODE_ENV === "development" &&
+      err.name === "ValidationError"
+        ? { details: err.message }
+        : {}),
+    });
+};
+export const notFound = (req, res) =>
+  res
+    .status(404)
+    .json({ success: false, message: "We could not find that endpoint." });

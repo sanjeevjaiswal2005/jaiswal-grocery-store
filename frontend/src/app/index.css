@@ -127,3 +127,22 @@ body{font-size:17px;line-height:1.5}
 @media(max-width:700px){.newsletter{flex-direction:column;align-items:stretch;padding:32px 22px}.newsletter form{flex-direction:column}.newsletter input{width:100%}.how-grid{gap:12px}.how-grid article{padding:26px 12px 18px}.how-grid p{font-size:14px}}
 @media(max-width:420px){.how-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.promise-cards article{display:block;padding:0 16px 20px}.promise-cards article>img{width:calc(100% + 32px);margin:0 -16px 14px;height:140px}.promise-cards article>svg{margin:0 0 10px}.promise-cards h3{margin-bottom:6px}}
+
+/* Admin notifications */
+.notif{position:relative;margin-left:auto;margin-right:10px}
+.notif-btn{position:relative;width:44px;height:44px;border-radius:50%;border:1px solid #d9e2d3;background:#fff;cursor:pointer;display:grid;place-items:center;color:#234d3c}
+.notif-btn:hover{background:#edf2e8}
+.notif-badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#d64545;color:#fff;font-size:12px;display:grid;place-items:center}
+.notif-panel{position:absolute;right:0;top:52px;width:360px;max-width:calc(100vw - 32px);background:#fff;border:1px solid #e3e8df;border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.16);z-index:60;overflow:hidden}
+.notif-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eef1ea}
+.notif-head button{border:0;background:none;color:#3b6344;font-weight:700;font-size:14px;cursor:pointer;display:flex;gap:4px;align-items:center}
+.notif-panel ul{list-style:none;margin:0;padding:0;max-height:380px;overflow-y:auto}
+.notif-panel li button{width:100%;display:flex;gap:12px;text-align:left;padding:13px 16px;border:0;background:#fff;cursor:pointer;border-bottom:1px solid #f1f3ee}
+.notif-panel li.unread button{background:#f3f8ea}
+.notif-panel li button:hover{background:#edf2e8}
+.notif-ico{flex:0 0 34px;height:34px;border-radius:50%;background:#e7eee2;color:#234d3c;display:grid;place-items:center}
+.notif-panel li span:last-child{display:grid;gap:2px}
+.notif-panel small{font-size:14px;color:#5a675d}
+.notif-panel em{font-size:12px;color:#8a948a;font-style:normal}
+.notif-empty{padding:28px 16px;text-align:center;color:#5a675d;margin:0}
+@media(max-width:700px){.admin-topbar{flex-wrap:wrap;gap:10px}.notif-panel{position:fixed;left:16px;right:16px;top:70px;width:auto}}
