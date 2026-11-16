@@ -25,6 +25,8 @@ export function PayOrder({order,onPaid,onClose}){
           key:d.keyId,order_id:d.razorpayOrderId,amount:d.amount,currency:d.currency,
           name:'Jaiswal Grocery Store',description:'Order #'+String(order._id).slice(-7).toUpperCase(),
           prefill:{name:d.name,email:d.email},theme:{color:'#234d3c'},
+          method:{upi:true,card:true,netbanking:true,wallet:true},
+          config:{display:{blocks:{upi:{name:'Pay with UPI',instruments:[{method:'upi'}]},other:{name:'Cards, Netbanking & Wallets',instruments:[{method:'card'},{method:'netbanking'},{method:'wallet'}]}},sequence:['block.upi','block.other'],preferences:{show_default_blocks:false}}},
           handler:async resp=>{try{const r=await api.post('/payments/razorpay/verify',resp);onPaid(r.data.order)}catch(err){setError(err.message)}},
           modal:{ondismiss:()=>onClose()},
         });
