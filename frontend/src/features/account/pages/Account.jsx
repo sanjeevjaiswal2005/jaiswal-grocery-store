@@ -3,7 +3,7 @@ import {Link,useNavigate} from 'react-router-dom';
 import {ArrowRight,Check,LogOut,MapPin,PackageOpen,Plus,Trash2,ChevronDown,Star} from 'lucide-react';
 import {money} from '../../../shared/utils/format.js';
 import {api} from '../../../shared/services/api.js';
-import {DummyPayModal} from '../../../shared/components/DummyPayModal.jsx';
+import {PayOrder} from '../../../shared/components/PayOrder.jsx';
 import {usePage} from '../../../shared/hooks/usePage.jsx';
 
 const STEPS=[['placed','Order placed'],['confirmed','Confirmed'],['packed','Packed'],['out-for-delivery','Out for delivery'],['delivered','Delivered']];
@@ -17,7 +17,7 @@ function OrderCard({o,onPay}){
   return <article className="acc-order"><button className="acc-order-head" onClick={()=>setOpen(!open)} aria-expanded={open}><div><b>Order #{String(o._id).slice(-7).toUpperCase()}</b><small>{new Date(o.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} · {plural(o.items.length,'item')}</small></div><span className={'status status-'+o.status}>{label(o.status)}</span><b className="acc-total">{money(o.total)}</b><ChevronDown size={18} className={open?'flip':''}/></button>
     <p className={'acc-msg'+(cancelled?' bad':'')}>{MESSAGES[o.status]}</p>{o.paymentMethod==='online'&&!cancelled&&(o.paymentStatus==='paid'?<p className="acc-paid"><Check size={14}/> Paid online</p>:<div className="acc-pay"><span>{o.paymentStatus==='failed'?'Your payment failed.':'Payment pending.'} Complete it so the store can process your order.</span><button className="btn btn-green" onClick={()=>onPay(o)}>Pay now</button></div>)}
     {!cancelled&&<ol className="acc-track">{STEPS.map(([k,t],i)=><li key={k} className={i<=idx?'done':''}><span>{i<idx?<Check size={13}/>:i+1}</span>{t}</li>)}</ol>}
-    {open&&<div className="acc-detail"><div><b>Items</b>{o.items.map((it,i)=><p key={i}>{it.name} × {it.quantity}<span>{money(it.price*it.quantity)}</span></p>)}{o.discount>0&&<p>Discount<span>-{money(o.discount)}</span></p>}{o.deliveryFee>0&&<p>Delivery<span>{money(o.deliveryFee)}</span></p>}<p><b>Total</b><span><b>{money(o.total)}</b></span></p></div><div><b>Delivering to</b><p className="plain">{o.address?.name} · {o.address?.phone}<br/>{[o.address?.line1,o.address?.line2,o.address?.city,o.address?.state,o.address?.pincode].filter(Boolean).join(', ')}</p><b>Payment</b><p className="plain">{o.paymentMethod==='cod'?'Cash on delivery':'Online payment (test)'} · {o.paymentStatus}</p></div></div>}
+    {open&&<div className="acc-detail"><div><b>Items</b>{o.items.map((it,i)=><p key={i}>{it.name} × {it.quantity}<span>{money(it.price*it.quantity)}</span></p>)}{o.discount>0&&<p>Discount<span>-{money(o.discount)}</span></p>}{o.deliveryFee>0&&<p>Delivery<span>{money(o.deliveryFee)}</span></p>}<p><b>Total</b><span><b>{money(o.total)}</b></span></p></div><div><b>Delivering to</b><p className="plain">{o.address?.name} · {o.address?.phone}<br/>{[o.address?.line1,o.address?.line2,o.address?.city,o.address?.state,o.address?.pincode].filter(Boolean).join(', ')}</p><b>Payment</b><p className="plain">{o.paymentMethod==='cod'?'Cash on delivery':'Online payment'} · {o.paymentStatus}</p></div></div>}
   </article>
 }
 
@@ -34,7 +34,7 @@ export function Account({user,setUser,notify}){
   if(!user)return <main className="account-page"><div className="empty-page"><h1>Your account</h1><p>Sign in to see orders and delivery addresses.</p><Link className="btn btn-green" to="/login">Sign in <ArrowRight size={16}/></Link></div></main>;
   const active=orders.filter(o=>!['delivered','cancelled'].includes(o.status)).length;
   return <main className="account-page">
-    {payOrder&&<DummyPayModal order={payOrder} onClose={()=>setPayOrder(null)} onPaid={o=>{setOrders(list=>list.map(x=>x._id===o._id?o:x));setPayOrder(null);say('Payment successful.')}}/>}
+    {payOrder&&<PayOrder order={payOrder} onClose={()=>setPayOrder(null)} onPaid={o=>{setOrders(list=>list.map(x=>x._id===o._id?o:x));setPayOrder(null);say('Payment successful.')}}/>}
     <div className="account-top"><div><span className="kicker">YOUR JAISWAL GROCERY</span><h1>Hello, <em>{user.name.split(' ')[0]}.</em></h1><p>{user.email}</p></div><button className="outline-btn" onClick={signOut}><LogOut size={15}/> Sign out</button></div>
     <div className="acc-summary"><div><b>{orders.length}</b><span>Total orders</span></div><div className={active?'hot':''}><b>{active}</b><span>In progress</span></div><div><b>{addresses.length}</b><span>Saved addresses</span></div></div>
     {error&&<div className="form-error" role="alert">{error}</div>}

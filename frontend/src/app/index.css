@@ -291,3 +291,4 @@ html{scroll-behavior:smooth}
 .pay-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .pay-tabs button{min-width:0}
 .pay-submit{display:flex;justify-content:center;max-width:100%}
+.pay-wait{background:#fff;border-radius:14px;padding:28px 34px;color:#234d3c}

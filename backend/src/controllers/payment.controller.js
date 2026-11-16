@@ -17,12 +17,37 @@ const TEST_UPI = { 'success@dummy': { ok: true }, 'failure@dummy': { ok: false, 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
+
+// Shared by the dummy gateway, Razorpay verify and the Razorpay webhook. Safe to call twice.
+export async function markPaid(order, payment, providerPaymentId, note = 'Payment received') {
+  if (payment.status === 'captured' && order.paymentStatus === 'paid') return false;
+  payment.providerPaymentId = providerPaymentId;
+  payment.status = 'captured';
+  payment.signatureVerifiedAt = new Date();
+  await payment.save();
+  order.paymentStatus = 'paid';
+  order.timeline.push({ status: order.status, note });
+  await order.save();
+  try {
+    const short = String(order._id).slice(-7).toUpperCase();
+    const notices = await Promise.all([
+      Notification.create({ user: order.user, audience: 'customer', title: 'Payment received', body: `Payment for order ${short} was successful.`, kind: 'payment', href: '/account' }),
+      Notification.create({ audience: 'admin', title: 'Payment received', body: `Order ${short} was paid online (₹${order.total.toFixed(2)}).`, kind: 'payment', href: '/admin?tab=orders' }),
+    ]);
+    notices.forEach(publishNotification);
+  } catch (err) {
+    console.error('Payment notifications failed:', err.message);
+  }
+  return true;
+}
+
 async function ownOrder(req, id) {
   if (!mongoose.isValidObjectId(id)) return null;
   return Order.findOne({ _id: id, user: req.user.id });
 }
 
 export async function createDummyPayment(req, res) {
+  if (razorpayEnabled()) return fail(res, 404, 'Not available.');
   const order = await ownOrder(req, req.body.orderId);
   if (!order) return fail(res, 404, 'Order not found.');
   if (order.paymentMethod !== 'online') return fail(res, 400, 'This order is not an online payment order.');
@@ -39,6 +64,7 @@ export async function createDummyPayment(req, res) {
 }
 
 export async function confirmDummyPayment(req, res) {
+  if (razorpayEnabled()) return fail(res, 404, 'Not available.');
   const { paymentId, method, card, upi } = req.body;
   if (!mongoose.isValidObjectId(paymentId)) return fail(res, 400, 'Invalid payment.');
   const payment = await Payment.findById(paymentId);
@@ -69,23 +95,66 @@ export async function confirmDummyPayment(req, res) {
     return ok(res, { status: 'failed', message: outcome.message, order });
   }
 
-  payment.providerPaymentId = 'dummy_pay_' + crypto.randomBytes(6).toString('hex');
-  payment.status = 'captured';
-  payment.signatureVerifiedAt = new Date(); // a live gateway would verify its HMAC signature here
-  await payment.save();
-  order.paymentStatus = 'paid';
-  order.timeline.push({ status: order.status, note: 'Payment received (test mode)' });
-  await order.save();
-
-  try {
-    const short = String(order._id).slice(-7).toUpperCase();
-    const notices = await Promise.all([
-      Notification.create({ user: req.user.id, audience: 'customer', title: 'Payment received', body: `Payment for order ${short} was successful.`, kind: 'payment', href: '/account' }),
-      Notification.create({ audience: 'admin', title: 'Payment received', body: `Order ${short} was paid online (₹${order.total.toFixed(2)}).`, kind: 'payment', href: '/admin?tab=orders' }),
-    ]);
-    notices.forEach(publishNotification);
-  } catch (err) {
-    console.error('Payment notifications failed:', err.message);
-  }
+  await markPaid(order, payment, 'dummy_pay_' + crypto.randomBytes(6).toString('hex'), 'Payment received (test mode)');
   return ok(res, { status: 'paid', message: 'Payment successful.', order });
+}
+
+// ---------- Razorpay (live gateway) ----------
+const rzpKeys = () => ({ id: process.env.RAZORPAY_KEY_ID, secret: process.env.RAZORPAY_KEY_SECRET });
+export const razorpayEnabled = () => Boolean(rzpKeys().id && rzpKeys().secret);
+const hmac = (secret, text) => crypto.createHmac('sha256', secret).update(text).digest('hex');
+const safeEqual = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
+
+export async function paymentConfig(req, res) {
+  return ok(res, { provider: razorpayEnabled() ? 'razorpay' : 'dummy', keyId: razorpayEnabled() ? rzpKeys().id : undefined });
+}
+
+export async function createRazorpayPayment(req, res) {
+  if (!razorpayEnabled()) return fail(res, 503, 'Online payments are not configured.');
+  const order = await ownOrder(req, req.body.orderId);
+  if (!order) return fail(res, 404, 'Order not found.');
+  if (order.paymentMethod !== 'online') return fail(res, 400, 'This order is not an online payment order.');
+  if (order.paymentStatus === 'paid') return fail(res, 409, 'This order is already paid.');
+  if (order.status === 'cancelled') return fail(res, 409, 'This order was cancelled.');
+  const { id, secret } = rzpKeys();
+  const r = await fetch('https://api.razorpay.com/v1/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Basic ' + Buffer.from(id + ':' + secret).toString('base64') },
+    body: JSON.stringify({ amount: Math.round(order.total * 100), currency: 'INR', receipt: String(order._id), notes: { orderId: String(order._id) } }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { console.error('Razorpay order failed:', data?.error?.description || r.status); return fail(res, 502, 'Could not start the payment. Please try again.'); }
+  await Payment.create({ order: order._id, provider: 'razorpay', providerOrderId: data.id, amount: order.total, currency: data.currency, status: 'created' });
+  return ok(res, { keyId: id, razorpayOrderId: data.id, amount: data.amount, currency: data.currency, name: req.user.name, email: req.user.email });
+}
+
+export async function verifyRazorpayPayment(req, res) {
+  if (!razorpayEnabled()) return fail(res, 503, 'Online payments are not configured.');
+  const { razorpay_order_id: rzpOrderId, razorpay_payment_id: rzpPaymentId, razorpay_signature: signature } = req.body;
+  if (!rzpOrderId || !rzpPaymentId || !signature) return fail(res, 400, 'Missing payment details.');
+  const payment = await Payment.findOne({ provider: 'razorpay', providerOrderId: rzpOrderId });
+  const order = payment && (await ownOrder(req, payment.order));
+  if (!payment || !order) return fail(res, 404, 'Payment not found.');
+  if (!safeEqual(hmac(rzpKeys().secret, rzpOrderId + '|' + rzpPaymentId), signature)) {
+    payment.status = 'failed'; await payment.save();
+    order.paymentStatus = 'failed'; order.timeline.push({ status: order.status, note: 'Payment verification failed' }); await order.save();
+    return fail(res, 400, 'Payment verification failed.');
+  }
+  await markPaid(order, payment, rzpPaymentId, 'Payment received (Razorpay)');
+  return ok(res, { status: 'paid', message: 'Payment successful.', order });
+}
+
+// Razorpay calls this even if the customer closes the tab right after paying.
+export async function razorpayWebhook(req, res) {
+  const whSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!whSecret) return res.status(503).end();
+  const sig = req.get('x-razorpay-signature');
+  if (!req.rawBody || !sig || !safeEqual(hmac(whSecret, req.rawBody), sig)) return res.status(400).end();
+  const entity = req.body?.payload?.payment?.entity;
+  if (req.body?.event === 'payment.captured' && entity?.order_id) {
+    const payment = await Payment.findOne({ provider: 'razorpay', providerOrderId: entity.order_id });
+    const order = payment && (await Order.findById(payment.order));
+    if (payment && order) await markPaid(order, payment, entity.id, 'Payment received (Razorpay webhook)');
+  }
+  return res.json({ received: true });
 }
