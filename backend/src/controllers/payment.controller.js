@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
-import { Order, Payment, Notification } from '../models/index.js';
+import { Order, Payment, Notification, StoreSetting } from '../models/index.js';
 import { publishNotification } from '../sockets/server.socket.js';
 import { ok } from '../utils/response.js';
 
@@ -106,7 +106,7 @@ const hmac = (secret, text) => crypto.createHmac('sha256', secret).update(text).
 const safeEqual = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 
 export async function paymentConfig(req, res) {
-  return ok(res, { provider: razorpayEnabled() ? 'razorpay' : 'dummy', keyId: razorpayEnabled() ? rzpKeys().id : undefined });
+  return ok(res, { provider: razorpayEnabled() ? 'razorpay' : 'dummy', keyId: razorpayEnabled() ? rzpKeys().id : undefined, upiQr: await upiQrEnabled() });
 }
 
 export async function createRazorpayPayment(req, res) {
@@ -157,4 +157,59 @@ export async function razorpayWebhook(req, res) {
     if (payment && order) await markPaid(order, payment, entity.id, 'Payment received (Razorpay webhook)');
   }
   return res.json({ received: true });
+}
+
+// ---------- Manual UPI QR (temporary): customer pays the store QR, admin confirms the UTR ----------
+export async function upiQrEnabled() {
+  const row = await StoreSetting.findOne({ key: 'upiQrEnabled' });
+  return row ? row.value !== false : true; // on unless an admin switched it off
+}
+
+export async function submitUpiQr(req, res) {
+  const order = await ownOrder(req, req.body.orderId);
+  if (!order) return fail(res, 404, 'Order not found.');
+  if (order.paymentMethod !== 'upi-qr') return fail(res, 400, 'This order does not use UPI QR payment.');
+  if (order.paymentStatus === 'paid') return fail(res, 409, 'This order is already paid.');
+  if (order.status === 'cancelled') return fail(res, 409, 'This order was cancelled.');
+  const utr = String(req.body.utr || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{8,30}$/.test(utr)) return fail(res, 400, 'Enter the transaction ID (UTR) from your UPI app. It has 12 digits or letters.');
+  const clash = await Order.findOne({ _id: { $ne: order._id }, paymentRef: utr });
+  if (clash) return fail(res, 409, 'This transaction ID was already used for another order.');
+  order.paymentRef = utr;
+  order.paymentStatus = 'verifying';
+  order.timeline.push({ status: order.status, note: 'UPI payment submitted, UTR ' + utr });
+  await order.save();
+  await Payment.create({ order: order._id, provider: 'upi-qr', providerPaymentId: utr, amount: order.total, status: 'authorized' });
+  try {
+    const short = String(order._id).slice(-7).toUpperCase();
+    const n = await Notification.create({ audience: 'admin', title: 'Verify UPI payment', body: `Order ${short}: ₹${order.total.toFixed(2)} paid by UPI QR. UTR ${utr}. Check your PhonePe app and confirm.`, kind: 'payment', href: '/admin?tab=orders' });
+    publishNotification(n);
+  } catch (err) { console.error('UPI notification failed:', err.message); }
+  return ok(res, { status: 'verifying', message: 'Thanks! We will confirm your payment shortly.', order });
+}
+
+export async function reviewUpiQr(req, res) {
+  const order = mongoose.isValidObjectId(req.params.id) && (await Order.findById(req.params.id));
+  if (!order) return fail(res, 404, 'Order not found.');
+  if (order.paymentMethod !== 'upi-qr') return fail(res, 400, 'This order does not use UPI QR payment.');
+  if (order.paymentStatus !== 'verifying') return fail(res, 409, 'There is no payment waiting for review on this order.');
+  const payment = await Payment.findOne({ order: order._id, provider: 'upi-qr' }).sort({ createdAt: -1 });
+  const short = String(order._id).slice(-7).toUpperCase();
+  if (req.body.action === 'confirm') {
+    if (payment) await markPaid(order, payment, order.paymentRef, 'Payment confirmed by store (UPI QR)');
+    else { order.paymentStatus = 'paid'; await order.save(); }
+    return ok(res, { order });
+  }
+  if (req.body.action === 'reject') {
+    if (payment) { payment.status = 'failed'; await payment.save(); }
+    order.paymentStatus = 'failed';
+    order.timeline.push({ status: order.status, note: 'UPI payment could not be verified' });
+    await order.save();
+    try {
+      const n = await Notification.create({ user: order.user, audience: 'customer', title: 'Payment not verified', body: `We could not verify the UPI payment for order ${short}. Please check the transaction ID and submit again.`, kind: 'payment', href: '/account' });
+      publishNotification(n);
+    } catch (err) { console.error('Reject notification failed:', err.message); }
+    return ok(res, { order });
+  }
+  return fail(res, 400, 'Invalid action.');
 }

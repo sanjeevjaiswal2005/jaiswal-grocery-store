@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {LoaderCircle} from 'lucide-react';
 import {api} from '../services/api.js';
 import {DummyPayModal} from './DummyPayModal.jsx';
+import {UpiQrModal} from './UpiQrModal.jsx';
 
 const SDK='https://checkout.razorpay.com/v1/checkout.js';
 const loadSdk=()=>new Promise((resolve,reject)=>{
@@ -10,7 +11,9 @@ const loadSdk=()=>new Promise((resolve,reject)=>{
 });
 
 // Pays an order with Razorpay when the server has live keys, otherwise falls back to the dummy gateway.
-export function PayOrder({order,onPaid,onClose}){
+export function PayOrder(props){return props.order.paymentMethod==='upi-qr'?<UpiQrModal {...props}/>:<PayOnline {...props}/>}
+
+function PayOnline({order,onPaid,onClose}){
   const[provider,setProvider]=useState(null),[error,setError]=useState(''),started=useRef(false);
   useEffect(()=>{
     if(started.current)return;started.current=true;
