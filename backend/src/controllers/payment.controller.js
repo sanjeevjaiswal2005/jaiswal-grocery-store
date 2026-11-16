@@ -172,17 +172,19 @@ export async function submitUpiQr(req, res) {
   if (order.paymentStatus === 'paid') return fail(res, 409, 'This order is already paid.');
   if (order.status === 'cancelled') return fail(res, 409, 'This order was cancelled.');
   const utr = String(req.body.utr || '').trim().toUpperCase();
-  if (!/^[A-Z0-9]{8,30}$/.test(utr)) return fail(res, 400, 'Enter the transaction ID (UTR) from your UPI app. It has 12 digits or letters.');
-  const clash = await Order.findOne({ _id: { $ne: order._id }, paymentRef: utr });
-  if (clash) return fail(res, 409, 'This transaction ID was already used for another order.');
-  order.paymentRef = utr;
+  if (utr && !/^[A-Z0-9]{8,30}$/.test(utr)) return fail(res, 400, 'That transaction ID looks wrong. It has 12 digits or letters. You can also leave it empty.');
+  if (utr) {
+    const clash = await Order.findOne({ _id: { $ne: order._id }, paymentRef: utr });
+    if (clash) return fail(res, 409, 'This transaction ID was already used for another order.');
+  }
+  order.paymentRef = utr || undefined;
   order.paymentStatus = 'verifying';
-  order.timeline.push({ status: order.status, note: 'UPI payment submitted, UTR ' + utr });
+  order.timeline.push({ status: order.status, note: utr ? 'UPI payment submitted, UTR ' + utr : 'UPI payment submitted (no UTR)' });
   await order.save();
-  await Payment.create({ order: order._id, provider: 'upi-qr', providerPaymentId: utr, amount: order.total, status: 'authorized' });
+  await Payment.create({ order: order._id, provider: 'upi-qr', providerPaymentId: utr || undefined, amount: order.total, status: 'authorized' });
   try {
     const short = String(order._id).slice(-7).toUpperCase();
-    const n = await Notification.create({ audience: 'admin', title: 'Verify UPI payment', body: `Order ${short}: ₹${order.total.toFixed(2)} paid by UPI QR. UTR ${utr}. Check your PhonePe app and confirm.`, kind: 'payment', href: '/admin?tab=orders' });
+    const n = await Notification.create({ audience: 'admin', title: 'Verify UPI payment', body: `Order ${short}: ₹${order.total.toFixed(2)} paid by UPI QR${utr ? `, UTR ${utr}` : ' (no UTR given)'}. Check your PhonePe app for this amount and confirm.`, kind: 'payment', href: '/admin?tab=orders' });
     publishNotification(n);
   } catch (err) { console.error('UPI notification failed:', err.message); }
   return ok(res, { status: 'verifying', message: 'Thanks! We will confirm your payment shortly.', order });
@@ -196,7 +198,7 @@ export async function reviewUpiQr(req, res) {
   const payment = await Payment.findOne({ order: order._id, provider: 'upi-qr' }).sort({ createdAt: -1 });
   const short = String(order._id).slice(-7).toUpperCase();
   if (req.body.action === 'confirm') {
-    if (payment) await markPaid(order, payment, order.paymentRef, 'Payment confirmed by store (UPI QR)');
+    if (payment) await markPaid(order, payment, order.paymentRef || 'upi-qr-manual', 'Payment confirmed by store (UPI QR)');
     else { order.paymentStatus = 'paid'; await order.save(); }
     return ok(res, { order });
   }

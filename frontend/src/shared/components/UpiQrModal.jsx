@@ -19,14 +19,14 @@ export function UpiQrModal({order,onClose,onPaid}){
     <div className="pay-head"><span>Pay by UPI · Scan QR</span><b>{money(order.total)}</b><small>Order #{short}</small></div>
     {done?<div className="pay-state ok"><CheckCircle2 size={44}/><b>Payment submitted</b><p>We will check your payment and confirm your order shortly. You can track it in My orders.</p><button className="btn btn-green" onClick={()=>onPaid(done)}>Done</button></div>
     :<form onSubmit={submit}>
-      <ol className="upi-steps"><li>Open PhonePe, Google Pay, Paytm or any UPI app and scan this QR.</li><li>{dynamic?<>The amount <b>{money(order.total)}</b> is filled in for you.</>:<>Pay exactly <b>{money(order.total)}</b>.</>}</li><li>Enter the <b>transaction ID (UTR)</b> from the payment receipt below.</li></ol>
+      <ol className="upi-steps"><li>Open PhonePe, Google Pay, Paytm or any UPI app and scan this QR.</li><li>{dynamic?<>The amount <b>{money(order.total)}</b> is filled in for you.</>:<>Pay exactly <b>{money(order.total)}</b>.</>}</li><li>Come back here and tap <b>I have paid</b>.</li></ol>
       {cfg===null?<div className="upi-qr upi-qr-wait"><LoaderCircle className="spin" size={28}/></div>
         :dynamic?(qr?<img className="upi-qr" src={qr} alt={`UPI QR for ${money(order.total)}`} width="260" height="260"/>:<div className="upi-qr upi-qr-wait"><LoaderCircle className="spin" size={28}/></div>)
         :<img className="upi-qr" src="/upi-qr.jpg" alt="PhonePe UPI QR code for Sanjeev Jaiswal" width="260" height="337"/>}
       {dynamic&&<div className="upi-meta"><span>Paying to <b>{cfg.name||cfg.vpa}</b></span><span>Amount <b>{money(order.total)}</b> (fixed)</span></div>}
       {dynamic&&<a className="btn btn-light upi-app-btn" href={link}><Smartphone size={16}/> Open in UPI app (on phone)</a>}
       {error&&<div className="form-error" role="alert">{error}</div>}
-      <label>Transaction ID / UTR<input value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))} placeholder="e.g. 412345678901" autoComplete="off" required minLength={8} maxLength={30}/></label>
+      <details className="upi-utr"><summary>Add transaction ID (optional, helps us confirm faster)</summary><label>Transaction ID / UTR<input value={utr} onChange={e=>setUtr(e.target.value.replace(/\s/g,''))} placeholder="e.g. 412345678901" autoComplete="off" maxLength={30}/></label></details>
       <button className="btn btn-green pay-submit" disabled={busy}>{busy?<><LoaderCircle className="spin" size={16}/> Submitting…</>:'I have paid'}</button>
       <button type="button" className="outline-btn" onClick={onClose} disabled={busy}>Pay later from My orders</button>
     </form>}

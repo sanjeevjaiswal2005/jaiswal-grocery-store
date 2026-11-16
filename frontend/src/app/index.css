@@ -311,3 +311,6 @@ html{scroll-behavior:smooth}
 .upi-meta{display:grid;gap:2px;justify-items:center;font-size:14px;color:#46554a;text-align:center}
 .upi-app-btn{border:1px solid #d9e2d3;margin:0;font-size:15px}
 .upi-modal .upi-app-btn{display:flex;gap:8px}
+.upi-utr{justify-self:stretch;font-size:14px;color:#5a675d}
+.upi-utr summary{cursor:pointer;padding:6px 0}
+.upi-utr label{margin-top:8px}
