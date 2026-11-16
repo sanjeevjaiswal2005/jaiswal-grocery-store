@@ -284,3 +284,10 @@ html{scroll-behavior:smooth}
 .pay-state.ok{color:#257b24}
 .pay-state.bad{color:#a15a48}
 .pay-state .btn{width:auto;margin:6px 0 0}
+.pay-modal,.pay-modal *{box-sizing:border-box}
+.pay-modal form{grid-template-columns:minmax(0,1fr)}
+.pay-modal label{min-width:0}
+.pay-modal input{width:100%;min-width:0;max-width:100%;margin:0}
+.pay-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.pay-tabs button{min-width:0}
+.pay-submit{display:flex;justify-content:center;max-width:100%}
