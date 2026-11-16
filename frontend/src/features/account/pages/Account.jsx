@@ -24,6 +24,7 @@ export function Account({user,setUser,notify}){
   const navigate=useNavigate(),[orders,setOrders]=useState([]),[addresses,setAddresses]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[tab,setTab]=useState('orders'),[adding,setAdding]=useState(false),[pageOrders,ordersPager]=usePage(orders,5);
   const say=m=>{if(notify)notify(m)};
   useEffect(()=>{if(!user)return;Promise.all([api.get('/orders'),api.get('/addresses')]).then(([o,a])=>{setOrders(o.data.items);setAddresses(a.data.items)}).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[user]);
+  useEffect(()=>{if(!user)return;const t=setInterval(()=>{if(!document.hidden)api.get('/orders').then(o=>setOrders(o.data.items)).catch(()=>{})},15000);return()=>clearInterval(t)},[user]);
   const reloadAddresses=async()=>{const a=await api.get('/addresses');setAddresses(a.data.items)};
   const addAddress=async e=>{e.preventDefault();setError('');const form=e.currentTarget,address=Object.fromEntries(new FormData(form).entries());address.isDefault=addresses.length===0||address.isDefault==='on';try{await api.post('/addresses',address);await reloadAddresses();form.reset();setAdding(false);say('Address saved.')}catch(err){setError(err.message)}};
   const makeDefault=async id=>{try{await api.patch('/addresses/'+id,{isDefault:true});await reloadAddresses();say('Default address updated.')}catch(err){setError(err.message)}};
