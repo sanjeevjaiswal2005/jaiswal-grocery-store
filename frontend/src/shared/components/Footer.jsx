@@ -1,6 +1,5 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 import {Leaf} from 'lucide-react';
-import {Shop} from '../../features/shop/pages/Shop.jsx';
 
 export function Footer(){return <footer className="footer"><div className="footer-main"><div><Link className="brand footer-brand" to="/"><span className="brand-mark"><Leaf size={22}/></span><span>jaiswal<span className="brand-light"> grocery</span><small>FRESH FROM OUR STORE</small></span></Link><p>Everyday goodness, brought a little closer to home.</p></div><div><b>Explore</b><Link to="/shop">Shop all</Link><Link to="/shop">Seasonal picks</Link><Link to="/shop">Daily essentials</Link></div><div><b>Help & support</b><a href="mailto:hello@jaiswalgrocery.com">Contact us</a><Link to="/account">Your orders</Link><a href="/#delivery">Delivery information</a></div><div className="footer-note"><span className="round-icon"><Leaf size={18}/></span><b>Good food, good days.</b><p>Curated with care for the people around our table.</p></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} Jaiswal Grocery Store</span><span>Made for your everyday table <span className="tiny-heart">♥</span></span><Link to="/login">Store team</Link></div></footer>}
